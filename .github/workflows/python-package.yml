@@ -6,15 +6,36 @@ on:
       - main
 
 jobs:
-  deploy:
+  # 1️⃣ PLAN JOB (auto runs)
+  plan:
+    name: Plan / Prepare Deployment
     runs-on: ubuntu-latest
 
     steps:
-    # 1️⃣ Checkout code
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2️⃣ Setup SSH
+    - name: Validate repo & show plan
+      run: |
+        echo "=== PLAN STAGE ==="
+        echo "Code checked out"
+        echo "Deployment plan ready"
+        ls -la
+
+  # 2️⃣ DEPLOY JOB (needs approval)
+  deploy:
+    name: Deploy to Production EC2
+    needs: plan
+    runs-on: ubuntu-latest
+
+    # 🔐 Manual approval happens here
+    environment:
+      name: production
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
@@ -25,20 +46,17 @@ jobs:
 
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    # 3️⃣ Test SSH
     - name: Test SSH connection
       run: |
         ssh -i ~/.ssh/id_rsa \
         ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo SSH OK"
 
-    # 4️⃣ Copy code to EC2
     - name: Copy application code
       run: |
         rsync -avz \
         -e "ssh -i ~/.ssh/id_rsa" \
         . ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ec2-user/app
 
-    # 5️⃣ FULL remote setup + run (ALL AUTOMATED)
     - name: Install dependencies & run app
       run: |
         ssh -i ~/.ssh/id_rsa \
