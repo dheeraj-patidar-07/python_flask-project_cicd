@@ -1,4 +1,4 @@
-name: Full CI/CD Python Deploy to EC2
+name: Full CI/CD Python Deploy to EC2 server
 
 on:
   push:
